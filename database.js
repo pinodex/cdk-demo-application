@@ -1,8 +1,7 @@
 const { DynamoDB } = require('aws-sdk');
 const uuid = require('uuid');
 
-const REGION = 'ap-southeast-1';
-const TABLE_NAME = 'messages';
+const { REGION, TABLE_NAME } = process.env;
 
 const dynamodb = new DynamoDB({
     region: REGION
