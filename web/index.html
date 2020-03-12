@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Demo</title>
+
+    <link rel="stylesheet" type="text/css" href="/css/milligram.min.css" />
+
+    <style type="text/css">
+        .message {
+            background: #eee;
+            padding: 10px;
+        }
+
+        .message + .message {
+            margin-top: 1rem;
+        }
+
+        .message .name {
+            font-weight: 600;
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .message .time {
+            font-weight: 400;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <h1>Demo</h1>
+
+        <hr />
+
+        <div class="row">
+            <div class="column column-60">
+                <h3>Messages</h3>
+
+                <div id="messages">
+                    <div v-if="messages.length === 0">
+                        Nothing to see here!
+                    </div>
+
+                    <div
+                        class="message"
+                        v-for="{ id, name, message, timestamp } in messages"
+                    >
+                        <p class="name">{{ name }}</p>
+
+                        <p class="timestamp">{{ new Date(timestamp).toLocaleString() }}</p>
+
+                        <p>{{ message }}</p>
+
+                        <button
+                            class="button"
+                            @click="() => deleteMessage(id)"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column">
+                <h3>Submit Message</h3>
+
+                <form @submit.prevent="addMessage">
+                    <fieldset>
+                        <label for="nameField">Name</label>
+
+                        <input
+                            id="nameField"
+                            type="text"
+                            name="name"
+                            placeholder="Enter your name"
+                            v-model="form.name"
+                        />
+
+                        <label for="commentField">Comment</label>
+
+                        <textarea
+                            id="commentField"
+                            name="message"
+                            placeholder="Enter your message"
+                            v-model="form.message"
+                        ></textarea>
+
+                        <button class="button button-outline">Submit</button>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/vue.min.js"></script>
+
+    <script>
+        const BASE_URL = 'https://9szgagucda.execute-api.ap-southeast-1.amazonaws.com/prod';
+
+        function formData() {
+            return {
+                name: null,
+                message: null
+            }
+        }
+
+        new Vue({
+            el: '#app',
+
+            data: () => ({
+                messages: [],
+                form: formData()
+            }),
+
+            async mounted() {
+                await this.getMessages();
+            },
+
+            methods: {
+                async getMessages() {
+                    const res = await fetch(`${BASE_URL}/allMessages`);
+                    const data = await res.json();
+
+                    this.messages.length = 0;
+                    this.messages.push(...data);
+                },
+
+                async getMessage(id) {
+                    const res = await fetch(`${BASE_URL}/getMessage/${id}`);
+                    const data = await res.json();
+
+                    return data;
+                },
+
+                async addMessage() {
+                    const res = await fetch(`${BASE_URL}/addMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.form)
+                    });
+
+                    const { id } = await res.json();
+                    const message = await this.getMessage(id);
+
+                    this.messages.unshift(message);
+
+                    this.form = formData();
+                },
+
+                async deleteMessage(id) {
+                    const response = confirm('Are you use you want to delete this message?');
+
+                    if (response) {
+                        const index = this.messages.findIndex((message) => message.id === id);
+
+                        await fetch(`${BASE_URL}/deleteMessage/${id}`, {
+                            method: 'DELETE'
+                        });
+
+                        this.messages.splice(index, 1);
+                    }
+                }
+            }
+        });
+    </script>
+
+    <script>
+        function getMessages() {
+            fetch(`${BASE_URL}/allMessages`).then(async (res) => {
+                const messages = await res.json();
+
+                renderMessages(messages);
+            });
+        }
+    </script>
+</body>
+</html>
